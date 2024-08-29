@@ -153,53 +153,6 @@ public abstract class EntityMixin implements MagneticEntityAccessor {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/Entity;collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"},
-            remap = true,
-            cancellable = true,
-            at = @At(value = "HEAD")
-    )
-    //must override entire method for compatibility with Radium mod
-    public void ac_collide(Vec3 deltaIn, CallbackInfoReturnable<Vec3> cir) {
-
-        AABB aabb = this.getBoundingBox();
-        Entity thisEntity = (Entity)(Object)this;
-        //AC CODE START
-        List<VoxelShape> list;
-        //fix infinity voxel collection crash for ItemEntity
-        if(this.getY() > this.level().getMinBuildHeight() - 200) {
-            list = this.level().getEntityCollisions(thisEntity, aabb.expandTowards(deltaIn));
-            List<VoxelShape> list2 = MagnetUtil.getMovingBlockCollisions(thisEntity, aabb);
-            list = ImmutableList.<VoxelShape>builder().addAll(list).addAll(list2).build();
-        }else{
-            list = List.of();
-        }
-        //AC CODE END
-        Vec3 vec3 = deltaIn.lengthSqr() == 0.0D ? deltaIn : Entity.collideBoundingBox(thisEntity, deltaIn, aabb, this.level(), list);
-        boolean flag = deltaIn.x != vec3.x;
-        boolean flag1 = deltaIn.y != vec3.y;
-        boolean flag2 = deltaIn.z != vec3.z;
-        boolean flag3 = this.onGround() || flag1 && deltaIn.y < 0.0D;
-        float stepHeight = thisEntity.getStepHeight();
-        if (stepHeight > 0.0F && flag3 && (flag || flag2)) {
-            Vec3 vec31 = Entity.collideBoundingBox(thisEntity, new Vec3(deltaIn.x, (double)stepHeight, deltaIn.z), aabb, this.level, list);
-            Vec3 vec32 = Entity.collideBoundingBox(thisEntity, new Vec3(0.0D, (double)stepHeight, 0.0D), aabb.expandTowards(deltaIn.x, 0.0D, deltaIn.z), this.level, list);
-            if (vec32.y < (double)stepHeight) {
-                Vec3 vec33 = Entity.collideBoundingBox(thisEntity, new Vec3(deltaIn.x, 0.0D, deltaIn.z), aabb.move(vec32), this.level(), list).add(vec32);
-                if (vec33.horizontalDistanceSqr() > vec31.horizontalDistanceSqr()) {
-                    vec31 = vec33;
-                }
-            }
-
-            if (vec31.horizontalDistanceSqr() > vec3.horizontalDistanceSqr()) {
-                cir.setReturnValue(vec31.add(Entity.collideBoundingBox(thisEntity, new Vec3(0.0D, -vec31.y + deltaIn.y, 0.0D), aabb.move(vec31), this.level(), list)));
-                return;
-            }
-        }
-
-        cir.setReturnValue(vec3);
-    }
-
-    @Inject(
             method = {"Lnet/minecraft/world/entity/Entity;turn(DD)V"},
             remap = true,
             cancellable = true,
